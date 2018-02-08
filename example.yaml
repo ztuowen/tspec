@@ -1,0 +1,38 @@
+TSPEC: 0.01 # language spec & others
+
+load:
+  scr: |
+    source(‘src.cpp’)
+    loop(0)
+    permute([3,1,2])
+
+tileJI:
+  param:
+    - TI: [64, 128, 256]
+    - TJ: !range [0, 2]
+  scr: |
+    tile(0,2,TJ)
+    tile(0,2,2**(TI + 6))
+  depends:
+    - load
+
+tileK:
+  optional: true    # denote this stage is optional
+  param:
+    - TK: [512]
+  scr: |
+    tile(0,5,TK)
+    datacopy(0,3,'A',False,1)
+    datacopy(0,4,'B')
+  depends:
+    - tileJI
+
+unroll:             # this stage is optional by default due to dependence
+  param:
+    - UI: [2,3,4,5]
+    - UJ: !range [2,4,2] # 2 to 4 by 2
+  scr: |
+    unroll(0,4,UI)
+    unroll(0,5,UJ)
+  depends:
+    - tileK
