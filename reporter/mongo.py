@@ -1,15 +1,18 @@
-import pymongo
 from reporter.generic import GenericReporter
 from typing import List
+from datetime import datetime
 
 
 class MongoReporter(GenericReporter):
-    def __init__(self, dbcollection):
-        super()
+    def __init__(self, dbcollection, tag):
+        super().__init__()
         self.db = dbcollection
+        self.tag = tag
 
-    def report(self, name: str, val):
-        pass
-
-    def finalize(self, path: List[str], config: List[int]):
-        pass
+    def finalize(self, path: str, param: List[str]):
+        # log time
+        self.report("tag", self.tag)
+        self.report("path", path)
+        self.report("param", param)
+        self.report("date", datetime.utcnow())
+        self.db.insert_one(self.metrics)

@@ -8,8 +8,8 @@ load:
 
 tileJI:
   param:
-    - TI: [64, 128, 256]
-    - TJ: !range [0, 2]
+    TI: [64, 128, 256]
+    TJ: !range [0, 2]
   scr: |
     tile(0,2,TJ)
     tile(0,2,2**(TI + 6))
@@ -17,9 +17,8 @@ tileJI:
     - load
 
 tileK:
-  optional: true    # denote this stage is optional
   param:
-    - TK: [512]
+    TK: [512]
   scr: |
     tile(0,5,TK)
     datacopy(0,3,'A',False,1)
@@ -29,10 +28,23 @@ tileK:
 
 unroll:             # this stage is optional by default due to dependence
   param:
-    - UI: [2,3,4,5]
-    - UJ: !range [2,4,2] # 2 to 4 by 2
+    UI: [2,3,4,5]
+    UJ: !range [2,4,2] # 2 to 4 by 2
   scr: |
     unroll(0,4,UI)
     unroll(0,5,UJ)
   depends:
     - tileK
+
+cuda:
+  depends:
+    - tileK
+  scr: |
+    cudaize()
+
+compile:
+  depends:
+    - cuda
+    - unroll
+  scr: |
+    do something
