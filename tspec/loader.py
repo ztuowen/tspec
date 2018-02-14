@@ -64,7 +64,7 @@ class TNode:
     def get_pval(self, ppos: List[int]):
         vals = []
         for p, pp in enumerate(ppos):
-            vals.append(str(self.pvals[p][pp]))
+            vals.append(repr(self.pvals[p][pp]))
         return vals
 
     def compile_val(self, pval: List[str]):
