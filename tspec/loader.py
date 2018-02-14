@@ -75,7 +75,7 @@ class TNode:
         return res
 
     def hash(self):
-        return base64.b64encode(hashlib.shake_256(('{}:{}\n{}'.format(self.name, len(self.pname), self.scr))
+        return base64.b64encode(hashlib.shake_256(('{}:{}\n{}'.format(self.name, str(self.pname), self.scr))
                                                   .encode('utf-8')).digest(6)).decode('utf-8')
 
     def __str__(self):
@@ -101,7 +101,7 @@ class TGraph:
         # create list of children from list of depends
         self.root = None
         for name, val in self.y.items():
-            if not ('depends' in val.keys()):
+            if not ('depends' in val):
                 val['depends'] = list()
             if len(val['depends']) == 0:
                 if self.root:
@@ -109,6 +109,8 @@ class TGraph:
                 else:
                     self.root = name
             val['children'] = list()
+            if not ('scr' in val):
+                val['scr'] = ""
         self.nodes = dict()
         for name, val in self.y.items():
             # create nodes and gather children
