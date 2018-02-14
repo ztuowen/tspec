@@ -1,4 +1,4 @@
-from reporter.generic import GenericReporter
+from tspec.reporter import GenericReporter
 from typing import List
 from datetime import datetime
 

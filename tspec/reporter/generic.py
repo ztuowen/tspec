@@ -24,7 +24,7 @@ class GenericReporter:
 
     def __call__(self, name: str, val):
         # alias for report, no need to overload
-        return self.report(name, str)
+        return self.report(name, val)
 
 
 class GenericQuery:

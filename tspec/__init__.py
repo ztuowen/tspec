@@ -1,5 +1,5 @@
-from reporter.generic import GenericReporter
-from loader import TGraph, TNode
+from tspec.reporter import GenericReporter
+from tspec.loader import TGraph, TNode
 from typing import List
 
 
@@ -13,8 +13,7 @@ class Tspec:
 
     def runscr(self, scr, path, param):
         try:
-            # exec(scr, {'report': self.reporter}, {})
-            print(scr, path, param)
+            exec(scr, {'report': self.reporter}, {})
             self.reporter.finalize(path, param)
         except SystemExit:
             print("Script error")
