@@ -4,10 +4,12 @@ from datetime import datetime
 
 
 class MongoReporter(GenericReporter):
-    def __init__(self, dbcollection, tag):
+    def __init__(self, dbcollection, tag, interval=100):
         super().__init__()
         self.db = dbcollection
         self.tag = tag
+        self.result_cache = list()
+        self.interval = interval
 
     def finalize(self, path: str, param: List[str]):
         # log time
@@ -15,4 +17,10 @@ class MongoReporter(GenericReporter):
         self.report("path", path)
         self.report("param", param)
         self.report("date", datetime.utcnow())
-        self.db.insert_one(self.metrics)
+        self.result_cache.append(self.metrics)
+        if len(self.result_cache) >= self.interval:
+            self.flush()
+
+    def flush(self):
+        self.db.insert_many(self.result_cache)
+        self.result_cache = list()

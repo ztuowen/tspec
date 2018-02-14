@@ -22,6 +22,11 @@ class GenericReporter:
         # to be called after one variant finished reporting
         pass
 
+    @abc.abstractmethod
+    def flush(self):
+        # to be called to force flushing of pending result in cache
+        pass
+
     def __call__(self, name: str, val):
         # alias for report, no need to overload
         return self.report(name, val)

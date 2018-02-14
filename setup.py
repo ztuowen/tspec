@@ -7,9 +7,9 @@ setup(name='tspec',
       author_email='ztuowen@gmail.com',
       license='MIT',
       packages=['tspec'],
-      install_requires = [
-            'dnspython==1.15.0',
-            'pymongo==3.6.0',
-            'PyYAML==3.12'
-          ],
+      install_requires=[
+          'dnspython==1.15.0',
+          'pymongo==3.6.0',
+          'PyYAML==3.12'
+      ],
       zip_safe=False)

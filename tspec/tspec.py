@@ -38,7 +38,7 @@ class Tspec:
             for d in pdims:
                 TOT *= d
             while c == 0:
-                print("{} : {}%".format(path, cnt/TOT*100))
+                print("{} : {.2%}".format(path, cnt / TOT))
                 cnt += 1
                 scr = ""
                 b = 0
@@ -60,6 +60,7 @@ class Tspec:
                     else:
                         c = 0
                     i += 1
+            self.reporter.flush()
         else:
             # continue dfs
             for c in node.children:
