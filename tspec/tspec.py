@@ -1,6 +1,12 @@
 from tspec.reporter import GenericReporter
 from tspec.loader import TGraph, TNode
 from typing import List
+import pickle
+import dill
+
+
+class ScriptExit(Exception):
+    pass
 
 
 class Tspec:
@@ -11,18 +17,20 @@ class Tspec:
         self.reporter = reporter
         self.graph = TGraph(spec)
 
-    def runscr(self, scr, path, param):
+    def runseg(self, scr, state):
+        state['global']['report'] = self.reporter
         try:
-            exec(scr, {'report': self.reporter}, {})
-            self.reporter.finalize(path, param)
+            exec(scr, state['global'], state['local'])
+            del state['global']['report']
         except SystemExit:
             print("Script exit early")
+            return False
         except Exception as e:
-            print("Path {} with param {}".format(path, str(param)))
             print("Encountered error when running:")
             print(e)
             print("Script:\n{}".format(scr))
-        self.reporter.clear()
+            return False
+        return True
 
     def dfs(self, nodes: List[TNode], path: str, pdims: List[int]):
         node = nodes[-1]
@@ -32,34 +40,59 @@ class Tspec:
         if len(node.children) == 0:
             # build script
             psel = [0] * len(pdims)
+            state = [0] * (len(nodes) + 1)
+            state[0] = dill.dumps({'global': dict(), 'local': dict()})
+            reports = [0] * (len(nodes) + 1)
+            reports[0] = pickle.dumps(dict())
             c = 0
             cnt = 1
             TOT = 1
             for d in pdims:
                 TOT *= d
+            pos = -1
             while c == 0:
-                print("{} : {.2%}".format(path, cnt / TOT))
+                print("{} : {:.2%}".format(path, cnt / TOT))
                 cnt += 1
-                scr = ""
                 b = 0
                 val = list()
-                for n in nodes:
-                    pl = len(n.get_dims())
-                    val += n.get_pval(psel[b:(b + pl)])
-                    scr += n.compile(psel[b:(b + pl)])
+                cur = 0
+                while b + len(nodes[cur].get_dims()) <= pos:
+                    pl = len(nodes[cur].get_dims())
+                    val += nodes[cur].get_pval(psel[b:(b + pl)])
                     b += pl
-                self.runscr(scr, path, val)
+                    cur += 1
+                pos = len(pdims) - 1
+                # setup program state
+                pstate = dill.loads(state[cur])
+                # setup report state
+                self.reporter.metrics = pickle.loads(reports[cur])
+                try:
+                    for n in range(cur, len(nodes)):
+                        pl = len(nodes[n].get_dims())
+                        val += nodes[n].get_pval(psel[b:(b + pl)])
+                        scr = nodes[n].compile(psel[b:(b + pl)])
+                        b += pl
+                        if self.runseg(scr, pstate):
+                            state[n + 1] = dill.dumps(pstate)
+                            reports[n + 1] = pickle.dumps(self.reporter.metrics)
+                        else:
+                            pos = b - 1
+                            raise ScriptExit()
+                    self.reporter.finalize(path, val)
+                except ScriptExit:
+                    pass
+                self.reporter.clear()
                 # prepare for next
-                i = 0
                 c = 1
-                while c > 0 and i < len(pdims):
-                    psel[i] += c
-                    if psel[i] == pdims[i]:
-                        psel[i] = 0
+                while c > 0 and pos >= 0:
+                    psel[pos] += c
+                    if psel[pos] == pdims[pos]:
+                        psel[pos] = 0
                         c = 1
                     else:
                         c = 0
-                    i += 1
+                    pos -= 1
+                pos += 1
             self.reporter.flush()
         else:
             # continue dfs

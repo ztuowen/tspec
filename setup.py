@@ -10,6 +10,7 @@ setup(name='tspec',
       install_requires=[
           'dnspython==1.15.0',
           'pymongo==3.6.0',
-          'PyYAML==3.12'
+          'PyYAML==3.12',
+          'dill==0.2.7.1'
       ],
       zip_safe=False)

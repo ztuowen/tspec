@@ -1,50 +1,96 @@
-TSPEC: 0.01 # language spec & others
+TSPEC: 0.01
 
-load:
-  scr: |
-    source(‘src.cpp’)
-    loop(0)
-    permute([3,1,2])
-
-tileJI:
+thrddecomp:
   param:
-    TI: [64, 128, 256]
-    TJ: !range [0, 2]
-  scr: |
-    tile(0,2,TJ)
-    tile(0,2,2**(TI + 6))
-  depends:
-    - load
+    GRID: [64,128,256,512,1024,2048]
+    BLOCK: [64,128,256,512,1024]
 
-tileK:
+limitwarp:
+  depends:
+    - thrddecomp
   param:
-    TK: [512]
+    WARP: [2,4,8,16,32]
   scr: |
-    tile(0,5,TK)
-    datacopy(0,3,'A',False,1)
-    datacopy(0,4,'B')
-  depends:
-    - tileJI
+    if WARP*32 > BLOCK:
+      exit()
 
-unroll:             # this stage is optional by default due to dependence
+cachestore:
+  depends:
+    - limitwarp
   param:
-    UI: [2,3,4,5]
-    UJ: !range [2,4,2] # 2 to 4 by 2
-  scr: |
-    unroll(0,4,UI)
-    unroll(0,5,UJ)
-  depends:
-    - tileK
+    COP: ["cs", "wt"]
 
-cuda:
-  depends:
-    - tileK
-  scr: |
-    cudaize()
 
-compile:
+cyccompile:
   depends:
-    - cuda
-    - unroll
+    - cachestore
   scr: |
-    do something
+    # build the program
+    import subprocess
+    subprocess.run(["make", "clean"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    r = subprocess.run(["make", 'CFLAGS=-DGRIDDIM={} -DBLOCKDIM={} -DWARP={} -DCYCL -Xptxas -dscm={}'
+                                .format(GRID, BLOCK, WARP, COP)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if (r.returncode != 0):
+      exit()
+
+ncyccompile:
+  depends:
+    - cachestore
+  scr: |
+    # build the program
+    import subprocess
+    subprocess.run(["make", "clean"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    r = subprocess.run(["make", 'CFLAGS=-DGRIDDIM={} -DBLOCKDIM={} -DWARP={} -DNCYCL -Xptxas -dscm={}'
+                                .format(GRID, BLOCK, WARP, COP)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if (r.returncode != 0):
+      exit()
+
+cycsubdomain:
+  depends:
+    - cyccompile
+  param:
+    SDZ: [2,4,8,16,32,64,128]
+    SDY: [2,4,8,16,32,64,128]
+    SDX: [2,4,8,16]
+  scr: |
+    SD = "{},{},{}".format(SDZ,SDY,SDX)
+
+cyclicx:
+  depends:
+    - cycsubdomain
+  scr: |
+    SC = "{},4,4".format(SDZ)
+
+cyclicz:
+  depends:
+    - cycsubdomain
+  scr: |
+    SC = "1,4,4"
+
+ncycsubdomain:
+  depends:
+    - ncyccompile
+  param:
+    SDZ: [2,4,8,16,32,64,128]
+    SDY: [2,4,8,16,32,64,128]
+    SDX: [2,4,8,16]
+  scr: |
+    SD = "{},{},{}".format(SDZ,SDY,SDX)
+
+noncycliccube:
+  param:
+    CYCL: ["NCYCL"]
+  depends:
+    - ncycsubdomain
+  scr: |
+    SC = "1,{},{}".format(SDY,SDX)
+
+bench:
+  depends:
+    - cyclicx
+    - cyclicz
+    - noncycliccube
+  scr: |
+    r = subprocess.run(["./stencil", SD, SC],stdout=subprocess.PIPE)
+    v = float(r.stdout.decode('utf-8'))
+    report("gstencils", v)
