@@ -53,6 +53,8 @@ cycsubdomain:
     SDY: [2,4,8,16,32,64,128]
     SDX: [2,4,8,16]
   scr: |
+    if 128/SDZ*128/SDY*16/SDX<20:
+      exit()
     SD = "{},{},{}".format(SDZ,SDY,SDX)
 
 cyclicx:
@@ -75,21 +77,16 @@ ncycsubdomain:
     SDY: [2,4,8,16,32,64,128]
     SDX: [2,4,8,16]
   scr: |
+    if 128/SDZ*128/SDY*16/SDX<20:
+      exit()
     SD = "{},{},{}".format(SDZ,SDY,SDX)
-
-noncycliccube:
-  param:
-    CYCL: ["NCYCL"]
-  depends:
-    - ncycsubdomain
-  scr: |
     SC = "1,{},{}".format(SDY,SDX)
 
 bench:
   depends:
     - cyclicx
     - cyclicz
-    - noncycliccube
+    - ncycsubdomain
   scr: |
     r = subprocess.run(["./stencil", SD, SC],stdout=subprocess.PIPE)
     v = float(r.stdout.decode('utf-8'))
