@@ -35,8 +35,10 @@ class Tspec:
     def dfs(self, nodes: List[TNode], path: str, pdims: List[int]):
         node = nodes[-1]
         path += node.hash()
+        # Copy dimensions
+        pdims = pdims[:]
         pdims += node.get_dims()
-        # node ends here
+        # Leaf node
         if len(node.children) == 0:
             # build script
             psel = [0] * len(pdims)
@@ -95,7 +97,7 @@ class Tspec:
                 pos += 1
             self.reporter.flush()
         else:
-            # continue dfs
+            # Internal node continue dfs
             for c in node.children:
                 nodes.append(c)
                 self.dfs(nodes, path, pdims)

@@ -22,5 +22,6 @@ class MongoReporter(GenericReporter):
             self.flush()
 
     def flush(self):
-        self.db.insert_many(self.result_cache)
+        if len(self.result_cache) > 0:
+            self.db.insert_many(self.result_cache)
         self.result_cache = list()

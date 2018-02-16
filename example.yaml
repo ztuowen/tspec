@@ -67,7 +67,7 @@ cyclicz:
   depends:
     - cycsubdomain
   scr: |
-    SC = "1,4,4"
+    SC = "4,4,1"
 
 ncycsubdomain:
   depends:
