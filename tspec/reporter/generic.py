@@ -4,8 +4,12 @@ import abc
 
 
 class GenericReporter:
-    def __init__(self):
+    def __init__(self, evalfunc):
         self.metrics = dict()
+        self._eval = evalfunc
+
+    def evaluate(self):
+        return self._eval(self.metrics)
 
     def clear(self):
         # called when script/program finishes/fails to clear internal state

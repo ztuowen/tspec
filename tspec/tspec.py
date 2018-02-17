@@ -1,12 +1,65 @@
 from tspec.reporter import GenericReporter
 from tspec.loader import TGraph, TNode
 from typing import List
-import pickle
-import dill
+from skopt import Optimizer
+import math
+import random
 
 
 class ScriptExit(Exception):
     pass
+
+
+class LeafOptimizer:
+    FAIL = 0
+
+    def __init__(self, nlist: List[TNode], reporter: GenericReporter):
+        self.nlist = nlist[:]
+        self.path = ""
+        odims = list()
+        for n in nlist:
+            self.path += n.hash()
+            odims += n.get_odims()
+        optparam = {'kappa': 0}
+        self.opt = Optimizer(odims, base_estimator='RF', acq_optimizer='sampling',
+                             acq_func='LCB', acq_func_kwargs=optparam)
+        self.lv = self.FAIL
+        self.reporter = reporter
+
+    def runseg(self, scr, state):
+        state['global']['report'] = self.reporter
+        try:
+            exec(scr, state['global'], state['local'])
+            del state['global']['report']
+            return True
+        except SystemExit:
+            print("Script exit early")
+            return False
+        except Exception as e:
+            print("Encountered error when running:")
+            print(e)
+            print("Script:\n{}".format(scr))
+            return False
+
+    def execscript(self):
+        psel = self.opt.ask()
+        print(self.path, psel)
+        pstate = {'global': dict(), 'local': dict()}
+        b = 0
+        try:
+            for n in self.nlist:
+                pl = len(n.get_dims())
+                scr = n.compile_val(psel[b:(b + pl)])
+                b += pl
+                if not self.runseg(scr, pstate):
+                    raise ScriptExit()
+            self.lv = self.reporter.evaluate()
+            self.reporter.finalize(self.path, psel)
+        except ScriptExit:
+            self.lv = self.FAIL
+        self.opt.tell(psel, self.lv)
+        self.reporter.clear()
+        return self.lv
 
 
 class Tspec:
@@ -17,94 +70,39 @@ class Tspec:
         self.reporter = reporter
         self.graph = TGraph(spec)
 
-    def runseg(self, scr, state):
-        state['global']['report'] = self.reporter
-        try:
-            exec(scr, state['global'], state['local'])
-            del state['global']['report']
-        except SystemExit:
-            print("Script exit early")
-            return False
-        except Exception as e:
-            print("Encountered error when running:")
-            print(e)
-            print("Script:\n{}".format(scr))
-            return False
-        return True
-
-    def dfs(self, nodes: List[TNode], path: str, pdims: List[int]):
+    def dfs(self, nodes: List[TNode]):
         node = nodes[-1]
-        path += node.hash()
-        # Copy dimensions
-        pdims = pdims[:]
-        pdims += node.get_dims()
         # Leaf node
         if len(node.children) == 0:
-            # build script
-            psel = [0] * len(pdims)
-            state = [0] * (len(nodes) + 1)
-            state[0] = dill.dumps({'global': dict(), 'local': dict()})
-            reports = [0] * (len(nodes) + 1)
-            reports[0] = pickle.dumps(dict())
-            c = 0
-            cnt = 1
-            TOT = 1
-            for d in pdims:
-                TOT *= d
-            pos = -1
-            while c == 0:
-                print("{} : {:.2%}".format(path, cnt / TOT))
-                cnt += 1
-                b = 0
-                val = list()
-                cur = 0
-                while b + len(nodes[cur].get_dims()) <= pos:
-                    pl = len(nodes[cur].get_dims())
-                    val += nodes[cur].get_pval(psel[b:(b + pl)])
-                    b += pl
-                    cur += 1
-                pos = len(pdims) - 1
-                # setup program state
-                pstate = dill.loads(state[cur])
-                # setup report state
-                self.reporter.metrics = pickle.loads(reports[cur])
-                try:
-                    for n in range(cur, len(nodes)):
-                        pl = len(nodes[n].get_dims())
-                        val += nodes[n].get_pval(psel[b:(b + pl)])
-                        scr = nodes[n].compile(psel[b:(b + pl)])
-                        b += pl
-                        if self.runseg(scr, pstate):
-                            state[n + 1] = dill.dumps(pstate)
-                            reports[n + 1] = pickle.dumps(self.reporter.metrics)
-                        else:
-                            pos = b - 1
-                            raise ScriptExit()
-                    self.reporter.finalize(path, val)
-                except ScriptExit:
-                    pass
-                self.reporter.clear()
-                # prepare for next
-                c = 1
-                while c > 0 and pos >= 0:
-                    psel[pos] += c
-                    if psel[pos] == pdims[pos]:
-                        psel[pos] = 0
-                        c = 1
-                    else:
-                        c = 0
-                    pos -= 1
-                pos += 1
-            self.reporter.flush()
+            return [LeafOptimizer(nodes, self.reporter)]
         else:
+            ret = list()
             # Internal node continue dfs
             for c in node.children:
                 nodes.append(c)
-                self.dfs(nodes, path, pdims)
+                # use dfs to build a set of leaf optimizer
+                ret += self.dfs(nodes)
                 nodes.pop()
+            return ret
 
-    def run(self):
+    def run(self, wait=1000):
         # Path explore
-        self.dfs([self.graph.root], "", list())
+        opts = self.dfs([self.graph.root])
+        if len(opts) < 1:
+            return
+        # Optimize
+        minimum = LeafOptimizer.FAIL
+        lst_imprv = 0
+        while True:
+            lst_imprv += 1
+            leaf = random.choice(opts)
+            print(minimum, end=" ")
+            val = leaf.execscript()
+            if val < minimum:
+                minimum = val
+                lst_imprv = 0
+            if lst_imprv >= wait:
+                break
+        self.reporter.flush()
 
 # use exec with global/local dictionary mapping: {} will mask value

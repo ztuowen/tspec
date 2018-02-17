@@ -49,6 +49,12 @@ class TNode:
     def get_dims(self):
         return self.dims
 
+    def get_odims(self):
+        odims = list()
+        for p in self.pvals:
+            odims.append(p[:])
+        return odims
+
     def add_child(self, child):
         self.children.append(child)
 
@@ -64,13 +70,13 @@ class TNode:
     def get_pval(self, ppos: List[int]):
         vals = []
         for p, pp in enumerate(ppos):
-            vals.append(repr(self.pvals[p][pp]))
+            vals.append(self.pvals[p][pp])
         return vals
 
-    def compile_val(self, pval: List[str]):
+    def compile_val(self, pval: List[Any]):
         res = ""
         for p, pn in enumerate(self.pname):
-            res += ("{}={}\n".format(pn, str(pval[p])))
+            res += ("{}={}\n".format(pn, str(repr(pval[p]))))
         res += self.scr
         return res
 
