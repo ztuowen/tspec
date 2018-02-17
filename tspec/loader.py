@@ -2,6 +2,7 @@ import yaml
 from typing import List, Any
 import base64
 import hashlib
+from skopt.space import Categorical
 
 
 class ParseError(Exception):
@@ -52,7 +53,10 @@ class TNode:
     def get_odims(self):
         odims = list()
         for p in self.pvals:
-            odims.append(p[:])
+            if len(p) == 2:
+                odims.append(Categorical(p[:]))
+            else:
+                odims.append(p[:])
         return odims
 
     def add_child(self, child):

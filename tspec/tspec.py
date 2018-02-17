@@ -96,11 +96,12 @@ class Tspec:
         while True:
             lst_imprv += 1
             leaf = random.choice(opts)
-            print(minimum, end=" ")
+            print(minimum, lst_imprv, end=" ")
             val = leaf.execscript()
             if val < minimum:
                 minimum = val
                 lst_imprv = 0
+                self.reporter.flush()
             if lst_imprv >= wait:
                 break
         self.reporter.flush()
