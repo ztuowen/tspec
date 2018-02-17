@@ -16,6 +16,7 @@ class LeafOptimizer:
     def __init__(self, nlist: List[TNode], reporter: GenericReporter):
         self.nlist = nlist[:]
         self.path = ""
+        self.minimum = self.FAIL
         odims = list()
         for n in nlist:
             self.path += n.hash()
@@ -59,7 +60,10 @@ class LeafOptimizer:
             self.lv = self.FAIL
         self.opt.tell(psel, self.lv)
         self.reporter.clear()
-        return self.lv
+        if self.lv < self.minimum:
+            self.minimum = self.lv
+            return True
+        return False
 
 
 class Tspec:
@@ -97,11 +101,10 @@ class Tspec:
             lst_imprv += 1
             leaf = random.choice(opts)
             print(minimum, lst_imprv, end=" ")
-            val = leaf.execscript()
-            if val < minimum:
-                minimum = val
+            if leaf.execscript():
                 lst_imprv = 0
                 self.reporter.flush()
+            minimum = min(leaf.lv, minimum)
             if lst_imprv >= wait:
                 break
         self.reporter.flush()
