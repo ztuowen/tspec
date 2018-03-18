@@ -18,13 +18,18 @@ class LeafOptimizer:
         self.path = ""
         self.minimum = self.FAIL
         odims = list()
+        self.space = 1
         for n in nlist:
             self.path += n.hash()
             odims += n.get_odims()
-        optparam = {'kappa': 0}
+            for i in n.get_dims():
+                self.space = self.space * i
+        optparam = {'kappa': 1.96}
         self.opt = Optimizer(odims, base_estimator='RF', acq_optimizer='sampling',
                              acq_func='LCB', acq_func_kwargs=optparam)
         self.lv = self.FAIL
+        self.l = 1
+        self.exp = 0
         self.reporter = reporter
 
     def runseg(self, scr, state):
@@ -74,8 +79,11 @@ class Tspec:
         self.reporter = reporter
         self.graph = TGraph(spec)
 
-    def dfs(self, nodes: List[TNode]):
+    def dfs(self, nodes: List[TNode], space: int):
         node = nodes[-1]
+        nspace = space
+        for i in node.get_dims():
+            nspace = nspace * i
         # Leaf node
         if len(node.children) == 0:
             return [LeafOptimizer(nodes, self.reporter)]
@@ -85,23 +93,44 @@ class Tspec:
             for c in node.children:
                 nodes.append(c)
                 # use dfs to build a set of leaf optimizer
-                ret += self.dfs(nodes)
+                ret += self.dfs(nodes, space)
                 nodes.pop()
             return ret
 
-    def run(self, wait=1000):
+    def run(self, wait=1000, rho=2 ** (-1 / 50), k=3):
         # Path explore
-        opts = self.dfs([self.graph.root])
+        opts = self.dfs([self.graph.root], 1)
         if len(opts) < 1:
             return
         # Optimize
-        minimum = LeafOptimizer.FAIL
+        minimum = LeafOptimizer.FAIL - 1e-5
         lst_imprv = 0
+        for i in opts:
+            i.l = 1
         while True:
             lst_imprv += 1
-            leaf = random.choice(opts)
+            weight = list()
+            lw = 0
+            m = 1e200
+            for l in opts:
+                m = min(m, l.exp)
+            for l in opts:
+                lw = lw + (rho ** (l.exp - m)) * l.space * l.l * (k * l.minimum + minimum) / minimum
+                weight.append(lw)
+            print(weight)
+            lw = lw * random.random()
+            leaf = None
+            for item, cp in zip(opts, weight):
+                if cp >= lw:
+                    leaf = item
+                    break
+            if leaf is None:
+                leaf = opts[-1]
             print(minimum, lst_imprv, end=" ")
+            leaf.exp = leaf.exp + 1
             if leaf.execscript():
+                leaf.l = leaf.l * (rho ** leaf.exp) + 1
+                leaf.exp = 0
                 lst_imprv = 0
                 self.reporter.flush()
             minimum = min(leaf.lv, minimum)
