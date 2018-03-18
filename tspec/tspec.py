@@ -97,7 +97,7 @@ class Tspec:
                 nodes.pop()
             return ret
 
-    def run(self, wait=1000, rho=2 ** (-1 / 50), k=3):
+    def run(self, wait=1000, rho=2 ** (-1 / 10), k=3):
         # Path explore
         opts = self.dfs([self.graph.root], 1)
         if len(opts) < 1:
@@ -117,7 +117,6 @@ class Tspec:
             for l in opts:
                 lw = lw + (rho ** (l.exp - m)) * l.space * l.l * (k * l.minimum + minimum) / minimum
                 weight.append(lw)
-            print(weight)
             lw = lw * random.random()
             leaf = None
             for item, cp in zip(opts, weight):
