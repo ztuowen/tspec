@@ -2,7 +2,7 @@ TSPEC: 0.01
 
 thrddecomp:
   param:
-    GRID: [64,128,256,512,1024,2048]
+    GRID: !range [64, 2048]
     BLOCK: [64,128,256,512,1024]
 
 limitwarp:

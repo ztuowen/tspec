@@ -3,6 +3,7 @@ from tspec.loader import TGraph, TNode
 from typing import List
 from skopt import Optimizer
 from dill import dill
+import numpy as np
 import signal
 import pickle
 import random
@@ -53,6 +54,9 @@ class LeafOptimizer:
 
     def execscript(self):
         psel = self.opt.ask()
+        for i in range(len(psel)):
+            if isinstance(psel[i], np.generic):
+                psel[i] = np.asscalar(psel[i])
         print(self.path, psel)
         pstate = {'global': dict(), 'local': dict()}
         b = 0
@@ -116,8 +120,8 @@ class GenericSearch:
     def stop(self):
         if self.best is None:
             return
-        print("Ran {} tests with best objective value {:.2}".format(self.total, self.best['obj']))
-        print("Running the best performing configuration:")
+        print("Ran {} tests with best objective value {:.5}".format(self.total, self.best['obj']))
+        print("Running the best performing configuration")
         self.runBest()
         self.reporter.clear()
 
@@ -206,14 +210,13 @@ class ExhaustiveSearch(GenericSearch):
             reports = [0] * (len(nodes) + 1)
             reports[0] = pickle.dumps(dict())
             c = 0
-            cnt = 1
+            cnt = 0
             TOT = 1
             for d in pdims:
                 TOT *= d
             pos = -1
             while c == 0 and not self._stop:
                 print("{} : {:.2%}".format(path, cnt / TOT))
-                cnt += 1
                 b = 0
                 val = list()
                 cur = 0
@@ -243,6 +246,10 @@ class ExhaustiveSearch(GenericSearch):
                     self.reporter.finalize(path, val)
                 except ScriptExit:
                     pass
+                step = 1
+                for n in pdims[(pos+1):]:
+                    step *= n
+                cnt = cnt + step
                 self.reporter.clear()
                 # prepare for next
                 c = 1

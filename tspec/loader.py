@@ -3,6 +3,7 @@ from typing import List, Any
 import base64
 import hashlib
 from skopt.space import Categorical
+from skopt.space import Integer
 
 
 class ParseError(Exception):
@@ -14,6 +15,7 @@ class Range:
 
     def __init__(self, dat):
         self.dat = dat
+        self.list = []
 
     def __str__(self):
         return "Range({})".format(str(self.dat))
@@ -22,17 +24,21 @@ class Range:
         return str(self)
 
     def compile(self):
-        if len(self.dat) < 2 or len(self.dat) > 3:
+        if len(self.dat) != 2:
             raise ParseError("Range with wrong number of parameters")
-        if len(self.dat) < 3:
-            self.dat.append(1)
-        self.dat[1] += self.dat[2]
-        return list(range(self.dat[0], self.dat[1], self.dat[2]))
+        if isinstance(self.dat[0], float) or isinstance(self.dat[1], float):
+            return self.dat[:]
+        return list(range(self.dat[0], self.dat[1] + 1))
+
+    def __len__(self):
+        return len(self.list)
 
     @classmethod
     def from_yaml(cls, loader, node):
         value = loader.construct_sequence(node)
-        return Range(value).compile()
+        rng = Range(value)
+        rng.list = rng.compile()
+        return rng
 
 
 class TNode:
@@ -53,10 +59,10 @@ class TNode:
     def get_odims(self):
         odims = list()
         for p in self.pvals:
-            if len(p) == 2:
-                odims.append(Categorical(p[:]))
+            if isinstance(p, Range):
+                odims.append(p.dat)
             else:
-                odims.append(p[:])
+                odims.append(Categorical(p[:]))
         return odims
 
     def add_child(self, child):
@@ -74,7 +80,10 @@ class TNode:
     def get_pval(self, ppos: List[int]):
         vals = []
         for p, pp in enumerate(ppos):
-            vals.append(self.pvals[p][pp])
+            if isinstance(self.pvals[p], Range):
+                vals.append(self.pvals[p].list[pp])
+            else:
+                vals.append(self.pvals[p][pp])
         return vals
 
     def compile_val(self, pval: List[Any]):
