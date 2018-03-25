@@ -4,8 +4,8 @@ from datetime import datetime
 
 
 class MongoReporter(GenericReporter):
-    def __init__(self, evalfunc, dbcollection, tag, interval=100):
-        super().__init__(evalfunc)
+    def __init__(self, dbcollection, tag, interval=100):
+        super().__init__()
         self.db = dbcollection
         self.tag = tag
         self.result_cache = list()
