@@ -5,4 +5,4 @@ from tspec.search import RFSearch
 rep = GenericReporter()
 
 tspec = RFSearch("quadratic.yaml", rep, lambda x: x["y"])
-tspec.run(wait=50)
+tspec.run(wait=100)
