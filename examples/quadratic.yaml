@@ -1,0 +1,13 @@
+TSPEC: 0.01
+
+selectx:
+    param:
+        x: !range [-500, 500]
+
+compute:
+    depends:
+        - selectx
+    scr: |
+        y = x**2 - 24*x + 100
+        report("y", y)
+

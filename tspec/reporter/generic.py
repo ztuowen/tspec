@@ -10,12 +10,10 @@ class GenericReporter:
     def clear(self):
         # called when script/program finishes/fails to clear internal state
         self.metrics = dict()
-        pass
 
     def report(self, name: str, val):
         # this report a specific named value
         self.metrics[name] = val
-        pass
 
     @abc.abstractmethod
     def finalize(self, path: str, param: List[str]):

@@ -105,7 +105,11 @@ class GenericSearch:
         pstate = {'global': dict(), 'local': dict()}
         b = 0
         for n in self.best['path']:
+            print(n.name, end=": ")
             pl = len(n.get_dims())
+            for p, v in zip(n.pname, self.best['params'][b:(b + pl)]):
+                print("[{},{}]".format(p, str(repr(v))), end=" ")
+            print()
             scr = n.compile_val(self.best['params'][b:(b + pl)])
             b += pl
             runseg(self.reporter, scr, pstate)
@@ -120,7 +124,7 @@ class GenericSearch:
     def stop(self):
         if self.best is None:
             return
-        print("Ran {} tests with best objective value {:.5}".format(self.total, self.best['obj']))
+        print("Ran {} tests with best objective value {:.5}".format(self.total, float(self.best['obj'])))
         print("Running the best performing configuration")
         self.runBest()
         self.reporter.clear()
@@ -247,7 +251,7 @@ class ExhaustiveSearch(GenericSearch):
                 except ScriptExit:
                     pass
                 step = 1
-                for n in pdims[(pos+1):]:
+                for n in pdims[(pos + 1):]:
                     step *= n
                 cnt = cnt + step
                 self.reporter.clear()
