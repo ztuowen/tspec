@@ -1,5 +1,5 @@
 from tspec.reporter import GenericReporter
-from tspec import *
+from tspec.search import RFSearch
 
 # connect to data base
 rep = GenericReporter()
