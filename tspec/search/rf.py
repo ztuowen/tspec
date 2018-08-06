@@ -23,7 +23,8 @@ class LeafOptimizer:
             for i in n.get_dims():
                 self.space = self.space * i
         optparam = {'kappa': 1.96}
-        self.opt = Optimizer(odims, base_estimator='RF', acq_optimizer='sampling',
+        self.opt = Optimizer(odims, base_estimator='RF',
+                             acq_optimizer='sampling',
                              acq_func='LCB', acq_func_kwargs=optparam)
         self.lv = self.FAIL
         self.l = 1
@@ -100,7 +101,8 @@ class RFSearch(GenericSearch):
             for l in opts:
                 m = min(m, l.exp)
             for l in opts:
-                lw = lw + (rho ** (l.exp - m)) * l.space * l.l * (k * l.minimum + minimum) / minimum
+                lw = lw + (rho ** (l.exp - m)) * l.space * l.l * (
+                        k * l.minimum + minimum) / minimum
                 weight.append(lw)
             lw = lw * random.random()
             leaf = None

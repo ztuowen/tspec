@@ -1,10 +1,10 @@
-from tspec.reporter import GenericReporter
-from tspec.loader import TNode
 from typing import List
 from dill import dill
+import pickle
 from tspec.search.generic import GenericSearch
 from tspec.search.helpers import *
-import pickle
+from tspec.reporter import GenericReporter
+from tspec.loader import TNode
 
 
 class ExhaustiveSearch(GenericSearch):
@@ -32,7 +32,8 @@ class ExhaustiveSearch(GenericSearch):
                 TOT *= d
             pos = -1
             while c == 0 and not self._stop:
-                print("{} : {:.2%}".format(path, cnt / TOT))
+                print("{} {} : {:.2%}".format(
+                    self.best['obj'] if self.best else "None", path, cnt / TOT))
                 b = 0
                 val = list()
                 cur = 0

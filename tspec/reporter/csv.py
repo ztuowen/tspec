@@ -1,7 +1,7 @@
-from tspec.reporter import GenericReporter
-from datetime import datetime
 from typing import List
 import csv
+from datetime import datetime
+from tspec.reporter import GenericReporter
 
 
 class CSVReporter(GenericReporter):
@@ -21,7 +21,7 @@ class CSVReporter(GenericReporter):
             self.flush()
 
     def flush(self):
-        if len(self.result_cache) > 0:
+        if self.result_cache:
             with open(self.filename, 'a') as f:
                 writer = csv.writer(f)
                 for res in self.result_cache:

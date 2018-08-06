@@ -1,6 +1,6 @@
-from tspec.reporter import GenericReporter
 from typing import List
 from datetime import datetime
+from tspec.reporter import GenericReporter
 
 
 class MongoReporter(GenericReporter):
@@ -22,6 +22,6 @@ class MongoReporter(GenericReporter):
             self.flush()
 
     def flush(self):
-        if len(self.result_cache) > 0:
+        if self.result_cache:
             self.db.insert_many(self.result_cache)
         self.result_cache = list()
