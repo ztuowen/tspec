@@ -125,6 +125,9 @@ class TGraph:
         # create list of children from list of depends
         self.root = None
         for name, val in self.y.items():
+            if not val:
+                val = dict()
+                self.y[name] = val
             if 'depends' not in val:
                 val['depends'] = list()
             if not val['depends']:
