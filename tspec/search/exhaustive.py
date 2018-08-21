@@ -1,5 +1,5 @@
 from typing import List
-from dill import dill
+import dill
 import pickle
 from tspec.search.generic import GenericSearch
 from tspec.search.helpers import *
