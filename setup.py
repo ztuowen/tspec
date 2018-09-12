@@ -10,5 +10,6 @@ setup(name='tspec',
       author_email='ztuowen@gmail.com',
       license='MIT',
       packages=['tspec'],
+      python_requires='>=3.6.0',
       install_requires=requires,
       zip_safe=False)
