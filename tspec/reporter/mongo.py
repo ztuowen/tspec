@@ -25,3 +25,10 @@ class MongoReporter(GenericReporter):
         if self.result_cache:
             self.db.insert_many(self.result_cache)
         self.result_cache = list()
+
+    def last_in_path(self, path):
+        last = self.db.find_one({"tag": self.tag, "path": path},
+                                sort=[("date", -1)])
+        if last:
+            return last['param']
+        return None

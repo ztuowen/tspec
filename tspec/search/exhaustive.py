@@ -8,8 +8,9 @@ from tspec.loader import TNode
 
 
 class ExhaustiveSearch(GenericSearch):
-    def __init__(self, spec: str, reporter: GenericReporter, obj):
+    def __init__(self, spec: str, reporter: GenericReporter, obj, cont=False):
         super().__init__(spec, reporter, obj)
+        self.cont = cont
 
     def dfs(self, nodes: List[TNode], path: str, pdims: List[int]):
         node = nodes[-1]
@@ -25,6 +26,26 @@ class ExhaustiveSearch(GenericSearch):
             state[0] = dill.dumps({'global': dict(), 'local': dict()})
             reports = [0] * (len(nodes) + 1)
             reports[0] = pickle.dumps(dict())
+
+            # start from last result
+            if self.cont:
+                last = self.reporter.last_in_path(path)
+            else:
+                last = None
+            if last is not None:
+                lpos = 0
+                for n in range(len(nodes)):
+                    pl = nodes[n].get_dims()
+                    for p, p_cnt in enumerate(pl):
+                        last_param = last[lpos + p]
+                        last_pick = None
+                        for param in range(p_cnt):
+                            if nodes[n].get_pval_at(p, param) == last_param:
+                                last_pick = param
+                        psel[lpos + p] = last_pick
+                    lpos += len(pl)
+                # cnt is messed up here
+                # Will rerun the last one
             c = 0
             cnt = 0
             TOT = 1
@@ -42,7 +63,6 @@ class ExhaustiveSearch(GenericSearch):
                     val += nodes[cur].get_pval(psel[b:(b + pl)])
                     b += pl
                     cur += 1
-                pos = len(pdims) - 1
                 # setup program state
                 pstate = dill.loads(state[cur])
                 # setup report state
@@ -69,6 +89,7 @@ class ExhaustiveSearch(GenericSearch):
                 cnt = cnt + step
                 self.reporter.clear()
                 # prepare for next
+                pos = len(pdims) - 1
                 c = 1
                 while c > 0 and pos >= 0:
                     psel[pos] += c

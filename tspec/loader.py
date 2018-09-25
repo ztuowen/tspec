@@ -78,13 +78,16 @@ class TNode:
         vals = self.get_pval(ppos)
         return self.compile_val(vals)
 
+    def get_pval_at(self, p, pp):
+        if isinstance(self.pvals[p], Range):
+            return self.pvals[p].plist[pp]
+        else:
+            return self.pvals[p][pp]
+
     def get_pval(self, ppos: List[int]):
         vals = []
         for p, pp in enumerate(ppos):
-            if isinstance(self.pvals[p], Range):
-                vals.append(self.pvals[p].plist[pp])
-            else:
-                vals.append(self.pvals[p][pp])
+            vals.append(self.get_pval_at(p, pp))
         return vals
 
     def compile_val(self, pval: List[Any]):
