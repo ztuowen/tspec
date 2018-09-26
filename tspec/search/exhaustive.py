@@ -63,6 +63,7 @@ class ExhaustiveSearch(GenericSearch):
                     val += nodes[cur].get_pval(psel[b:(b + pl)])
                     b += pl
                     cur += 1
+                pos = len(pdims) - 1
                 # setup program state
                 pstate = dill.loads(state[cur])
                 # setup report state
@@ -89,7 +90,6 @@ class ExhaustiveSearch(GenericSearch):
                 cnt = cnt + step
                 self.reporter.clear()
                 # prepare for next
-                pos = len(pdims) - 1
                 c = 1
                 while c > 0 and pos >= 0:
                     psel[pos] += c
