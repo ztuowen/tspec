@@ -6,10 +6,11 @@ from typing import List
 from skopt import Optimizer
 import numpy as np
 import random
+import sys
 
 
 class LeafOptimizer:
-    FAIL = 0
+    FAIL = sys.float_info.max
 
     def __init__(self, nlist: List[TNode], rfsearch):
         self.nlist = nlist[:]

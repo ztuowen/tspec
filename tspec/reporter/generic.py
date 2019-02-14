@@ -26,7 +26,7 @@ class GenericReporter:
         pass
 
     @abc.abstractmethod
-    def last_in_path(self):
+    def last_in_path(self, path):
         # help to resume in exhaustive search
         return None
 

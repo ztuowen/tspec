@@ -8,6 +8,8 @@ compute:
     depends:
         - selectx
     scr: |
+        if x < 0:
+            exit()
         y = x**2 - 24*x + 100
         report("y", y)
 
